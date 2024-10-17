@@ -1,0 +1,19 @@
+services:
+  app:
+    build: .
+    command: python main.py
+    environment:
+      MIS_HOST : ${MIS_HOST}
+      MIS_PORT: ${MIS_PORT}
+      MIS_SERVICE_NAME: ${MIS_SERVICE_NAME}
+      MIS_USER: ${MIS_USER}
+      MIS_PASSWORD: ${MIS_PASSWORD}
+      ORACLE_HOME: ${ORACLE_CLIENT_DIR}
+      LD_LIBRARY_PATH: ${ORACLE_CLIENT_DIR}
+      PYTHONUNBUFFERED: 1
+      #TNS_ADMIN: /opt/oracle/instantclient_21_9/network/admin
+
+    volumes:
+      - ./data:/data
+      - ./app:/app
+
