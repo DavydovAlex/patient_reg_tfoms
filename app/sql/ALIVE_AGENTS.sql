@@ -10,3 +10,4 @@ SELECT A.ID
                               and cf.DATE_OUT < trunc(to_date(:DATE_REESTR,'dd.mm.yyyy'))
                        where dc.AGENT = a.ID
                          and rownum = 1)
+       AND A.AGN_TYPE = 1 --Физ лица

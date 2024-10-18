@@ -6,7 +6,8 @@ from time import sleep
 from datetime import datetime, date
 import yaml
 import pandas as pd
-
+import logging
+import time
 
 MIS_HOST = os.environ.get('MIS_HOST')
 MIS_PORT = int(os.environ.get('MIS_PORT'))
@@ -83,6 +84,11 @@ class SubQuery(Query):
                 return var
         raise Exception('Переменная {} не найдена'.format(name))
 
+    @staticmethod
+    def join(*subqueries):
+        return 'WITH ' + ',\n'.join(subqueries)
+
+
 
     @classmethod
     def _prepare(cls, **vars_) -> dict:
@@ -144,7 +150,30 @@ class LpuAmbList(SubQuery):
     _name = 'MO_LIST_AMB'
     _vars = [ListIntVar('ids')]
 
+class AgentReqistration(SubQuery):
+    _file = 'AGENT_REGISTRATION_subquery.sql'
+    _name = 'AGENT_REGISTRATION'
+    _vars = []
 
+class RegistrationHosp(SubQuery):
+    _file = 'REGISTRATIONS_HOS_subquery.sql'
+    _name = 'REGISTATIONS_HOS'
+    _vars = []
+
+class RegistrationDent(SubQuery):
+    _file = 'REGISTRATIONS_DENT_subquery.sql'
+    _name = 'REGISTATIONS_DENT'
+    _vars = []
+
+class RegistrationGin(SubQuery):
+    _file = 'REGISTRATIONS_GIN_subquery.sql'
+    _name = 'REGISTATIONS_GIN'
+    _vars = []
+
+class Oids(SubQuery):
+    _file = 'OIDS_subquery.sql'
+    _name = 'OIDS'
+    _vars = []
 
 def read_config(path):
     if not os.path.exists(path):
@@ -155,6 +184,7 @@ def read_config(path):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, filename="/data/log.log", filemode="w")
     mo_list_all = read_config('MO_LIST_ALL.yml')
     mo_list_amb = read_config('MO_LIST_AMBULATORY.yml')
     config = read_config('config.yml')
@@ -166,27 +196,50 @@ if __name__ == '__main__':
     else:
         date_reestr = date.today().strftime('%d.%m.%Y')
 
-    print(date_reestr)
+    # print(date_reestr)
+    #
+    # rng = [i for i in range(1300)]
+    # {'enp_prefix':'`','agents':rng}
+    # mo_list_all_subquery = LpuList.make_subquery(ids=read_config('MO_LIST_ALL.yml'))
+    # mo_list_amb_subquery = LpuAmbList.make_subquery(ids=read_config('MO_LIST_AMBULATORY.yml'))
+    #
+    # print(mo_list_amb_subquery)
+    # print(mo_list_all_subquery)
+    # print(Agents.make_subquery(enp_prefix='`',agents=rng))
 
-    rng = [i for i in range(1300)]
-    {'enp_prefix':'`','agents':rng}
-    print(Agents.make_subquery(**{'enp_prefix': '`', 'agents': rng}))
+
+    ora.init_oracle_client()
+    connection_ = ora.connect(user=MIS_USER,
+                              password=MIS_PASSWORD,
+                              dsn=ora.makedsn(host=MIS_HOST, port=MIS_PORT, service_name=MIS_SERVICE_NAME))
+    params = date_reestr
+    cursor = connection_.cursor()
+    start_time = time.time()
+    cursor.execute(Query.read_sql('sql/ALIVE_AGENTS.sql'), {'DATE_REESTR': date_reestr})
+    agents = [agent[0] for agent in cursor.fetchall()]
+    logging.info('Количество агентов физлиц составляет: {}. Выполнено за {} c '.
+                 format(len(agents), time.time()-start_time))
+    agents_split = [agents[i:i + 500000] for i in range(0, len(agents), 500000)]
+    results_list = []
+    for agents in agents_split:
+        start_time = time.time()
+        sql = SubQuery.join(
+            LpuList.make_subquery(ids=read_config('MO_LIST_ALL.yml')),
+            LpuAmbList.make_subquery(ids=read_config('MO_LIST_AMBULATORY.yml')),
+            Oids.make_subquery(),
+            Agents.make_subquery(enp_prefix='`', agents=agents),
+            AgentReqistration.make_subquery()
+            #RegistrationHosp.make_subquery(),
+            #RegistrationDent.make_subquery(),
+            #RegistrationGin.make_subquery()
+        )
+        sql += '\n' + Query.read_sql('sql/CORE.sql')
+        cursor.execute(sql, {'DATE_REESTR': date_reestr})
+        result = cursor.fetchall()
+        logging.info('Добавлено {} пациентов. Выполнено за {} c '.format(len(result), time.time()-start_time))
+        results_list += result
+    logging.info("Общее число записей: {}".format(len(results_list)))
 
 
-    # ora.init_oracle_client()
-    # connection_ = ora.connect(user=MIS_USER,
-    #                           password=MIS_PASSWORD,
-    #                           dsn=ora.makedsn(host=MIS_HOST, port=MIS_PORT, service_name=MIS_SERVICE_NAME))
-    # sql = get_agents()
-    # params = date_reestr
-    # cursor = connection_.cursor()
-    # cursor.execute(sql, {'DATE_REESTR': date_reestr})
-    # cursor.prepare()
-    # agents = cursor.fetchall()
-    # count = 0
-    # agents_subquery = "SEL"
-    # for agent_row in agents:
-    #     agent_id = agent_row[0]
-    #     if count == 999:
 
 
