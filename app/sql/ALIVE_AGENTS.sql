@@ -1,6 +1,6 @@
 SELECT A.ID
   FROM D_AGENTS a
- WHERE (a.DEATHDATE is null or a.DEATHDATE > trunc(to_date(:DATE_REESTR,'dd.mm.yyyy')))
+ WHERE (a.DEATHDATE is null or a.DEATHDATE >= trunc(to_date(:DATE_REESTR,'dd.mm.yyyy')))
        AND a.ACCURACY_DATE_DEATH IS null
        and not exists(select null
                         from D_CF_DEATH_CONTENTS dc

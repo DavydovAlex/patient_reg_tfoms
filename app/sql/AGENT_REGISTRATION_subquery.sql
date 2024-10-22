@@ -8,15 +8,16 @@ SELECT /*+ MATERIALIZE */
                        ld.LPU_CODE REF_ID_HOS,
                        case when ar.REG_TYPE = 3
                               then case when aar.ID is not null
-                                          then aar.BEGIN_DATE
-                                        else ar.BEGIN_DATE
+                                          then to_char(aar.BEGIN_DATE,'dd.mm.yyyy')
+                                        else  to_char(ar.BEGIN_DATE,'dd.mm.yyyy')
                                    end
-                            when ar.REG_TYPE = 1 and aar.ID is null
-                              then ar.BEGIN_DATE
+                            when (ar.REG_TYPE in (1,2) OR ar.REG_TYPE IS NULL) and aar.ID is null
+                              then to_char(ar.BEGIN_DATE,'dd.mm.yyyy')
+                            ELSE to_char(ar.BEGIN_DATE,'dd.mm.yyyy')
                        END DATA_ATTAC,
                        case when ar.REG_TYPE = 3
                               then aar.REG_DOC_NUMB
-                            when ar.REG_TYPE = 1 and aar.ID is null
+                            when (ar.REG_TYPE in (1,2) OR ar.REG_TYPE IS NULL) and aar.ID is null
                               then ar.REG_DOC_NUMB
                        END NOTES,
                        case WHEN ar.REG_TYPE = 1

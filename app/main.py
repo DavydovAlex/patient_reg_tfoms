@@ -8,6 +8,7 @@ import yaml
 import pandas as pd
 import logging
 import time
+import csv
 
 MIS_HOST = os.environ.get('MIS_HOST')
 MIS_PORT = int(os.environ.get('MIS_PORT'))
@@ -155,21 +156,6 @@ class AgentReqistration(SubQuery):
     _name = 'AGENT_REGISTRATION'
     _vars = []
 
-class RegistrationHosp(SubQuery):
-    _file = 'REGISTRATIONS_HOS_subquery.sql'
-    _name = 'REGISTATIONS_HOS'
-    _vars = []
-
-class RegistrationDent(SubQuery):
-    _file = 'REGISTRATIONS_DENT_subquery.sql'
-    _name = 'REGISTATIONS_DENT'
-    _vars = []
-
-class RegistrationGin(SubQuery):
-    _file = 'REGISTRATIONS_GIN_subquery.sql'
-    _name = 'REGISTATIONS_GIN'
-    _vars = []
-
 class Oids(SubQuery):
     _file = 'OIDS_subquery.sql'
     _name = 'OIDS'
@@ -195,18 +181,7 @@ if __name__ == '__main__':
             date_reestr = date.today().strftime('%d.%m.%Y')
     else:
         date_reestr = date.today().strftime('%d.%m.%Y')
-
-    # print(date_reestr)
-    #
-    # rng = [i for i in range(1300)]
-    # {'enp_prefix':'`','agents':rng}
-    # mo_list_all_subquery = LpuList.make_subquery(ids=read_config('MO_LIST_ALL.yml'))
-    # mo_list_amb_subquery = LpuAmbList.make_subquery(ids=read_config('MO_LIST_AMBULATORY.yml'))
-    #
-    # print(mo_list_amb_subquery)
-    # print(mo_list_all_subquery)
-    # print(Agents.make_subquery(enp_prefix='`',agents=rng))
-
+    logging.info("DATE_REESTR: {}".format(date_reestr))
 
     ora.init_oracle_client()
     connection_ = ora.connect(user=MIS_USER,
@@ -229,9 +204,6 @@ if __name__ == '__main__':
             Oids.make_subquery(),
             Agents.make_subquery(enp_prefix='`', agents=agents),
             AgentReqistration.make_subquery()
-            #RegistrationHosp.make_subquery(),
-            #RegistrationDent.make_subquery(),
-            #RegistrationGin.make_subquery()
         )
         sql += '\n' + Query.read_sql('sql/CORE.sql')
         cursor.execute(sql, {'DATE_REESTR': date_reestr})
@@ -239,7 +211,46 @@ if __name__ == '__main__':
         logging.info('Добавлено {} пациентов. Выполнено за {} c '.format(len(result), time.time()-start_time))
         results_list += result
     logging.info("Общее число записей: {}".format(len(results_list)))
+    filename_pattern = 'ATTACH_'
+    extension = '.csv'
+    columns_list = ['REF_ID_PER',
+                    'SNAME',
+                    'NAME',
+                    'MIDDLE_NAM',
+                    'DATE_BIRTH',
+                    'ENP',
+                    'CONTACTS',
+                    'REGISTRATION_ADDR',
+                    'RESIDENTIAL_ADDR',
+                    'DATA_REEST',
+                    'REF_ID_HOS',
+                    'DATA_ATTAC',
+                    'NOTES',
+                    'FID_PERSON',
+                    'PRIB_ID',
+                    'SP_MO',
+                    'PODR',
+                    'REF_ID_DEN',
+                    'DATA_DENT',
+                    'NOTES_DENT',
+                    'FID_DENT_S',
+                    'SP_MO_DENT',
+                    'REF_ID_GIN',
+                    'DATA_GINE',
+                    'NOTES_GIN',
+                    'FID_GINE_S',
+                    'SP_MO_GINE'
+                    ]
+    rows_to_write = [list(row) for row in results_list]
+    rows_to_write_split = [rows_to_write[i:i + 999999] for i in range(0, len(rows_to_write), 999999)]
 
+    for i, chunck in enumerate(rows_to_write_split):
+        with open('/data/' + filename_pattern + str(i) + extension, mode='w', newline='',
+                  encoding='utf-8-sig') as file:
+            csv_writer = csv.writer(file, delimiter=';', quoting=csv.QUOTE_ALL)
+            csv_writer.writerow(columns_list)
+            csv_writer.writerows(chunck)
+            logging.info('{} записано в файл {}'.format(len(chunck), filename_pattern + str(i) + extension))
 
-
+    logging.info("Выгруженные файлы расположены в /data/")
 
