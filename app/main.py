@@ -172,7 +172,9 @@ def read_config(path):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filename="/data/log.log", filemode="w")
     mo_list_all = read_config('MO_LIST_ALL.yml')
+    print(mo_list_all)
     mo_list_amb = read_config('MO_LIST_AMBULATORY.yml')
+    print(mo_list_amb)
     config = read_config('config.yml')
     if 'DATE_REESTR' in config:
         if config['DATE_REESTR'] is not None:
@@ -195,24 +197,10 @@ if __name__ == '__main__':
     logging.info('Количество агентов физлиц составляет: {}. Выполнено за {} c '.
                  format(len(agents), time.time()-start_time))
     agents_split = [agents[i:i + 500000] for i in range(0, len(agents), 500000)]
+
+    cursor.close()
+    connection_.close()
     results_list = []
-    for agents in agents_split:
-        start_time = time.time()
-        sql = SubQuery.join(
-            LpuList.make_subquery(ids=read_config('MO_LIST_ALL.yml')),
-            LpuAmbList.make_subquery(ids=read_config('MO_LIST_AMBULATORY.yml')),
-            Oids.make_subquery(),
-            Agents.make_subquery(enp_prefix='`', agents=agents),
-            AgentReqistration.make_subquery()
-        )
-        sql += '\n' + Query.read_sql('sql/CORE.sql')
-        cursor.execute(sql, {'DATE_REESTR': date_reestr})
-        result = cursor.fetchall()
-        logging.info('Добавлено {} пациентов. Выполнено за {} c '.format(len(result), time.time()-start_time))
-        results_list += result
-    logging.info("Общее число записей: {}".format(len(results_list)))
-    filename_pattern = 'ATTACH_'
-    extension = '.csv'
     columns_list = ['REF_ID_PER',
                     'SNAME',
                     'NAME',
@@ -241,16 +229,61 @@ if __name__ == '__main__':
                     'FID_GINE_S',
                     'SP_MO_GINE'
                     ]
+    file_number = 0
+    for agents in agents_split:
+        connection_ = ora.connect(user=MIS_USER,
+                                  password=MIS_PASSWORD,
+                                  dsn=ora.makedsn(host=MIS_HOST, port=MIS_PORT, service_name=MIS_SERVICE_NAME))
+        cursor = connection_.cursor()
+        start_time = time.time()
+        sql = SubQuery.join(
+            LpuList.make_subquery(ids=read_config('MO_LIST_ALL.yml')),
+            LpuAmbList.make_subquery(ids=read_config('MO_LIST_AMBULATORY.yml')),
+            Oids.make_subquery(),
+            Agents.make_subquery(enp_prefix='`', agents=agents),
+            AgentReqistration.make_subquery()
+        )
+        sql += '\n' + Query.read_sql('sql/CORE.sql')
+        cursor.execute(sql, {'DATE_REESTR': date_reestr})
+        result = cursor.fetchall()
+        logging.info('Добавлено {} пациентов. Выполнено за {} c '.format(len(result), time.time()-start_time))
+        results_list += result
+        if len(results_list) + 500000 > 999999:
+            filename_pattern = 'ATTACH_'
+            extension = '.csv'
+            rows_to_write = [list(row) for row in results_list]
+            with open('/data/' + filename_pattern + str(file_number) + extension, mode='w', newline='',
+                      encoding='utf-8-sig') as file:
+                csv_writer = csv.writer(file, delimiter=';', quoting=csv.QUOTE_ALL)
+                csv_writer.writerow(columns_list)
+                csv_writer.writerows(rows_to_write)
+                logging.info('{} записано в файл {}'.format(len(rows_to_write), filename_pattern + str(file_number) + extension))
+                file_number += 1
+                results_list = []
+        cursor.close()
+        connection_.close()
+    logging.info("Общее число записей: {}".format(len(results_list)))
+    filename_pattern = 'ATTACH_'
+    extension = '.csv'
     rows_to_write = [list(row) for row in results_list]
-    rows_to_write_split = [rows_to_write[i:i + 999999] for i in range(0, len(rows_to_write), 999999)]
-
-    for i, chunck in enumerate(rows_to_write_split):
-        with open('/data/' + filename_pattern + str(i) + extension, mode='w', newline='',
-                  encoding='utf-8-sig') as file:
-            csv_writer = csv.writer(file, delimiter=';', quoting=csv.QUOTE_ALL)
-            csv_writer.writerow(columns_list)
-            csv_writer.writerows(chunck)
-            logging.info('{} записано в файл {}'.format(len(chunck), filename_pattern + str(i) + extension))
+    with open('/data/' + filename_pattern + str(file_number) + extension, mode='w', newline='',
+              encoding='utf-8-sig') as file:
+        csv_writer = csv.writer(file, delimiter=';', quoting=csv.QUOTE_ALL)
+        csv_writer.writerow(columns_list)
+        csv_writer.writerows(rows_to_write)
+        logging.info(
+            '{} записано в файл {}'.format(len(rows_to_write), filename_pattern + str(file_number) + extension))
+    #
+    # rows_to_write = [list(row) for row in results_list]
+    # rows_to_write_split = [rows_to_write[i:i + 999999] for i in range(0, len(rows_to_write), 999999)]
+    #
+    # for i, chunck in enumerate(rows_to_write_split):
+    #     with open('/data/' + filename_pattern + str(i) + extension, mode='w', newline='',
+    #               encoding='utf-8-sig') as file:
+    #         csv_writer = csv.writer(file, delimiter=';', quoting=csv.QUOTE_ALL)
+    #         csv_writer.writerow(columns_list)
+    #         csv_writer.writerows(chunck)
+    #         logging.info('{} записано в файл {}'.format(len(chunck), filename_pattern + str(i) + extension))
 
     logging.info("Выгруженные файлы расположены в /data/")
 
