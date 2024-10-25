@@ -7,7 +7,7 @@ SELECT /*+ MATERIALIZE */
                        ar.LPU_REG,
                        ld.LPU_CODE REF_ID_HOS,
                        case when ar.REG_TYPE = 3
-                              then case when aar.ID is not null
+                              then case when aar.ID is not null and aar.BEGIN_DATE is not null
                                           then to_char(aar.BEGIN_DATE,'dd.mm.yyyy')
                                         else  to_char(ar.BEGIN_DATE,'dd.mm.yyyy')
                                    end
