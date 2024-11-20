@@ -8,12 +8,44 @@ SELECT a.ID REF_ID_PER,
        a.REGISTRATION_ADDR,
        a.RESIDENTIAL_ADDR,
        to_char(trunc(to_date(:DATE_REESTR,'dd.mm.yyyy')),'dd.mm.yyyy') DATA_REEST,
-       ar_hos.REF_ID_HOS REF_ID_HOS,
+       --ar_hos.REF_ID_HOS REF_ID_HOS,
+       CASE WHEN ar_hos.REF_ID_HOS IS NULL
+              THEN CASE WHEN ar_gin.IS_AMB = 1
+                          THEN ar_gin.REF_ID_HOS
+                        WHEN ar_dent.IS_AMB = 1 AND ar_gin.IS_AMB = 0
+                          THEN ar_dent.REF_ID_HOS
+                        ELSE NULL
+                   END
+            ELSE ar_hos.REF_ID_HOS
+       END REF_ID_HOS,
+       CASE WHEN ar_hos.REF_ID_HOS IS NULL
+              THEN CASE WHEN ar_gin.IS_AMB = 1
+                          THEN 1
+                        WHEN ar_dent.IS_AMB = 1 AND ar_gin.IS_AMB = 0
+                          THEN 2
+                        ELSE 3
+                   END
+            ELSE 0
+       END IS_REPLACED_AMB,
        ar_hos.DATA_ATTAC,
        ar_hos.NOTES,
        ar_hos.FID_PERSON,
        ar_hos.PRIB_ID,
-       ar_hos.SP_MO,
+       --ar_hos.SP_MO SP_MO_old,
+       CASE WHEN ar_hos.SP_MO IS NOT NULL
+              THEN ar_hos.SP_MO
+            WHEN ar_hos.SP_MO IS NULL AND ar_hos.REF_ID_HOS IS NOT NULL
+              THEN (SELECT OID FROM OIDS_TO_REPLACE otr WHERE otr.LPU_CODE = ar_hos.REF_ID_HOS)
+            WHEN ar_hos.SP_MO IS NULL AND ar_hos.REF_ID_HOS IS NULL AND ar_gin.IS_AMB = 1
+              THEN (SELECT OID FROM OIDS_TO_REPLACE otr WHERE otr.LPU_CODE = ar_gin.REF_ID_HOS)
+            WHEN ar_hos.SP_MO IS NULL AND ar_hos.REF_ID_HOS IS NULL AND ar_gin.IS_AMB = 0 AND ar_dent.IS_AMB = 1
+              THEN (SELECT OID FROM OIDS_TO_REPLACE otr WHERE otr.LPU_CODE = ar_dent.REF_ID_HOS)
+            ELSE null
+       END SP_MO,
+       CASE WHEN ar_hos.SP_MO IS NULL
+              THEN 1
+            ELSE 0
+       END IS_EMPTY_SP_MO,
        ar_hos.PODR,
 
        ar_dent.REF_ID_HOS REF_ID_DEN,
@@ -21,6 +53,7 @@ SELECT a.ID REF_ID_PER,
        ar_dent.NOTES NOTES_DENT,
        ar_dent.FID_PERSON FID_DENT_S,
        ar_dent.SP_MO SP_MO_DENT,
+
 
        ar_gin.REF_ID_HOS REF_ID_GIN,
        ar_gin.DATA_ATTAC DATA_GINE,

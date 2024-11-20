@@ -161,6 +161,11 @@ class Oids(SubQuery):
     _name = 'OIDS'
     _vars = []
 
+class OidsToReplace(SubQuery):
+    _file = 'OIDS_TO_REPLACE_subquery.sql'
+    _name = 'OIDS_TO_REPLACE'
+    _vars = []
+
 def read_config(path):
     if not os.path.exists(path):
         raise FileNotFoundError('Файл {} не найден'.format(path))
@@ -212,11 +217,13 @@ if __name__ == '__main__':
                     'RESIDENTIAL_ADDR',
                     'DATA_REEST',
                     'REF_ID_HOS',
+                    'IS_REPLACED_AMB',
                     'DATA_ATTAC',
                     'NOTES',
                     'FID_PERSON',
                     'PRIB_ID',
                     'SP_MO',
+                    'IS_EMPTY_SP_MO',
                     'PODR',
                     'REF_ID_DEN',
                     'DATA_DENT',
@@ -240,6 +247,7 @@ if __name__ == '__main__':
             LpuList.make_subquery(ids=read_config('MO_LIST_ALL.yml')),
             LpuAmbList.make_subquery(ids=read_config('MO_LIST_AMBULATORY.yml')),
             Oids.make_subquery(),
+            OidsToReplace.make_subquery(),
             Agents.make_subquery(enp_prefix='`', agents=agents),
             AgentReqistration.make_subquery()
         )

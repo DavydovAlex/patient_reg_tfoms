@@ -5,6 +5,10 @@ SELECT /*+ MATERIALIZE */
           FROM (SELECT ar.ID,
                        ar.PID,
                        ar.LPU_REG,
+                       CASE WHEN ar.LPU_REG  in (SELECT ID FROM MO_LIST_AMB)
+                             THEN 1
+                            ELSE 0
+                       END IS_AMB,
                        ld.LPU_CODE REF_ID_HOS,
                        case when ar.REG_TYPE = 3
                               then case when aar.ID is not null and aar.BEGIN_DATE is not null
@@ -62,8 +66,7 @@ SELECT /*+ MATERIALIZE */
                        AND ar.LPU_REG in (SELECT ID FROM MO_LIST)
                 ) T
          WHERE T.RP_TYPE IS NOT nULL
-                AND ((T.RP_TYPE = 1
-                      AND t.LPU_REG in (SELECT ID FROM MO_LIST_AMB))
-                       OR T.RP_TYPE <> 1)
+                AND ((T.RP_TYPE = 1 AND t.IS_AMB = 1)
+                      OR T.RP_TYPE <> 1)
         ) t
  WHERE T.MAX_AR_BY_TYPE = T.ID
