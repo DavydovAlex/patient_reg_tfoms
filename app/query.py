@@ -13,14 +13,20 @@ def read(path:[str,Path]) -> str:
 class BindVar(abc.ABC):
     _name: str
     _value: Any
+    _is_complex: bool
 
-    def __init__(self, name: str, value: Any):
+    def __init__(self, name: str, value: Any, is_complex: bool = False):
         self._name = name
         self._value = value
+        self._is_complex = is_complex
 
     @property
     def name(self):
         return self._name
+
+    @property
+    def is_complex(self):
+        return self._is_complex
 
     @property
     @abc.abstractmethod
@@ -74,6 +80,26 @@ class StringVar(BindVar):
 class _QueryObject:
     query: str
     vars_: dict
+
+    def _check_bind_vars_names(self):
+        for bind_name in self.vars_.keys():
+            if not self.has_bind_var(bind_name):
+                raise Exception('Bind Var named "{}" not found in query'.format(bind_name))
+
+    def _check_bind_vars_types(self):
+        pass
+
+    def _check_list_bind_vars(self):
+        for
+
+
+    def has_bind_var(self, name:str):
+        return False if self.query.find(name) == -1 else True
+
+    def bind_vars(self):
+        self.check_vars()
+
+
 
 @dataclass
 class Query(_QueryObject):
