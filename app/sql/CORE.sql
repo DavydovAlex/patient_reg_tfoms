@@ -27,9 +27,22 @@ SELECT a.ID REF_ID_PER,
                    END
             ELSE 0
        END IS_REPLACED_AMB,
-       ar_hos.DATA_ATTAC,
+       --ar_hos.DATA_ATTAC,
+       CASE WHEN ar_hos.REF_ID_HOS IS NULL
+              THEN CASE WHEN ar_gin.IS_AMB = 1
+                          THEN ar_gin.DATA_ATTAC
+                        WHEN ar_dent.IS_AMB = 1 AND ar_gin.IS_AMB = 0
+                          THEN ar_dent.DATA_ATTAC
+                        ELSE NULL
+                   END
+            ELSE ar_hos.DATA_ATTAC
+       END DATA_ATTAC,
        ar_hos.NOTES,
-       ar_hos.FID_PERSON,
+       CASE WHEN ar_hos.REF_ID_HOS IS NULL AND (ar_gin.IS_AMB = 1 OR ar_dent.IS_AMB = 1)
+              THEN 1
+            ELSE ar_hos.FID_PERSON
+       END FID_PERSON,
+       --ar_hos.FID_PERSON,
        ar_hos.PRIB_ID,
        --ar_hos.SP_MO SP_MO_old,
        CASE WHEN ar_hos.SP_MO IS NOT NULL
