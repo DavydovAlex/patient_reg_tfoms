@@ -11,3 +11,7 @@ SELECT A.ID
                        where dc.AGENT = a.ID
                          and rownum = 1)
        AND A.AGN_TYPE = 1 --Физ лица
+  ORDER BY A.SURNAME,
+           A.FIRSTNAME,
+           A.LASTNAME,
+           A.BIRTHDATE
