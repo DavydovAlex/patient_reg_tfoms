@@ -12,7 +12,7 @@ SELECT a.ID REF_ID_PER,
        CASE WHEN ar_hos.REF_ID_HOS IS NULL
               THEN CASE WHEN ar_gin.IS_AMB = 1
                           THEN ar_gin.REF_ID_HOS
-                        WHEN ar_dent.IS_AMB = 1 AND ar_gin.IS_AMB = 0
+                        WHEN ar_dent.IS_AMB = 1 AND (ar_gin.IS_AMB = 0 OR ar_gin.IS_AMB IS null)
                           THEN ar_dent.REF_ID_HOS
                         ELSE NULL
                    END
@@ -21,7 +21,7 @@ SELECT a.ID REF_ID_PER,
        CASE WHEN ar_hos.REF_ID_HOS IS NULL
               THEN CASE WHEN ar_gin.IS_AMB = 1
                           THEN 1
-                        WHEN ar_dent.IS_AMB = 1 AND ar_gin.IS_AMB = 0
+                        WHEN ar_dent.IS_AMB = 1 AND (ar_gin.IS_AMB = 0 OR ar_gin.IS_AMB IS null)
                           THEN 2
                         ELSE 3
                    END
@@ -31,7 +31,7 @@ SELECT a.ID REF_ID_PER,
        CASE WHEN ar_hos.REF_ID_HOS IS NULL
               THEN CASE WHEN ar_gin.IS_AMB = 1
                           THEN ar_gin.DATA_ATTAC
-                        WHEN ar_dent.IS_AMB = 1 AND ar_gin.IS_AMB = 0
+                        WHEN ar_dent.IS_AMB = 1 AND (ar_gin.IS_AMB = 0 OR ar_gin.IS_AMB IS null)
                           THEN ar_dent.DATA_ATTAC
                         ELSE NULL
                    END
@@ -51,7 +51,7 @@ SELECT a.ID REF_ID_PER,
               THEN (SELECT OID FROM OIDS_TO_REPLACE otr WHERE otr.LPU_CODE = ar_hos.REF_ID_HOS)
             WHEN ar_hos.SP_MO IS NULL AND ar_hos.REF_ID_HOS IS NULL AND ar_gin.IS_AMB = 1
               THEN (SELECT OID FROM OIDS_TO_REPLACE otr WHERE otr.LPU_CODE = ar_gin.REF_ID_HOS)
-            WHEN ar_hos.SP_MO IS NULL AND ar_hos.REF_ID_HOS IS NULL AND ar_gin.IS_AMB = 0 AND ar_dent.IS_AMB = 1
+            WHEN ar_hos.SP_MO IS NULL AND ar_hos.REF_ID_HOS IS NULL AND (ar_gin.IS_AMB = 0 OR ar_gin.IS_AMB IS null) AND ar_dent.IS_AMB = 1
               THEN (SELECT OID FROM OIDS_TO_REPLACE otr WHERE otr.LPU_CODE = ar_dent.REF_ID_HOS)
             ELSE null
        END SP_MO,
