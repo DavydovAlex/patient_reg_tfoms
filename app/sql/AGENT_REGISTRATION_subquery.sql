@@ -29,10 +29,10 @@ SELECT /*+ MATERIALIZE */
                              WHEN ar.REG_TYPE = 3
                                then 2
                              WHEN ar.REG_TYPE = 2
-                               THEN 3
+                               THEN 1
                              WHEN ar.REG_TYPE IS NULL
                                   AND ar.ID IS NOT NULL
-                               THEN 4
+                               THEN null
                         END FID_PERSON,
                         ar.LPU_SITE PRIB_ID,
                         COALESCE(o_s.OID, o_d.oid) SP_MO,
