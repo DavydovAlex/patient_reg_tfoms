@@ -166,6 +166,11 @@ class OidsToReplace(SubQuery):
     _name = 'OIDS_TO_REPLACE'
     _vars = []
 
+class SmpOidsToReplace(SubQuery):
+    _file = 'SMP_OIDS_TO_REPLACE_subquery.sql'
+    _name = 'SMP_OIDS_TO_REPLACE'
+    _vars = []
+
 def read_config(path):
     if not os.path.exists(path):
         raise FileNotFoundError('Файл {} не найден'.format(path))
@@ -234,7 +239,8 @@ if __name__ == '__main__':
                     'DATA_GINE',
                     'NOTES_GIN',
                     'FID_GINE_S',
-                    'SP_MO_GINE'
+                    'SP_MO_GINE',
+                    'SMP_OID'
                     ]
     file_number = 0
     for agents in agents_split:
@@ -248,6 +254,7 @@ if __name__ == '__main__':
             LpuAmbList.make_subquery(ids=read_config('MO_LIST_AMBULATORY.yml')),
             Oids.make_subquery(),
             OidsToReplace.make_subquery(),
+            SmpOidsToReplace.make_subquery(),
             Agents.make_subquery(enp_prefix='`', agents=agents),
             AgentReqistration.make_subquery()
         )
