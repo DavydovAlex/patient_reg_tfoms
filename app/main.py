@@ -171,6 +171,11 @@ class SmpOidsToReplace(SubQuery):
     _name = 'SMP_OIDS_TO_REPLACE'
     _vars = []
 
+class Faps(SubQuery):
+    _file = 'FAPS_subquery.sql'
+    _name = 'FAP'
+    _vars = []
+
 def read_config(path):
     if not os.path.exists(path):
         raise FileNotFoundError('Файл {} не найден'.format(path))
@@ -219,7 +224,9 @@ if __name__ == '__main__':
                     'ENP',
                     'CONTACTS',
                     'REGISTRATION_ADDR',
+                    'REGISTRATION_ADDR_CITY',
                     'RESIDENTIAL_ADDR',
+                    'RESIDENTIAL_ADDR_CITY',
                     'DATA_REEST',
                     'REF_ID_HOS',
                     # 'IS_REPLACED_AMB',
@@ -240,7 +247,8 @@ if __name__ == '__main__':
                     'NOTES_GIN',
                     'FID_GINE_S',
                     'SP_MO_GINE',
-                    'SMP_OID'
+                    'SMP_OID',
+                    'FAP_OID'
                     ]
     file_number = 0
     for agents in agents_split:
@@ -253,6 +261,7 @@ if __name__ == '__main__':
             LpuList.make_subquery(ids=read_config('MO_LIST_ALL.yml')),
             LpuAmbList.make_subquery(ids=read_config('MO_LIST_AMBULATORY.yml')),
             Oids.make_subquery(),
+            Faps.make_subquery(),
             OidsToReplace.make_subquery(),
             SmpOidsToReplace.make_subquery(),
             Agents.make_subquery(enp_prefix='`', agents=agents),

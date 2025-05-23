@@ -1,5 +1,21 @@
 SELECT t.*,
-       (SELECT OID FROM SMP_OIDS_TO_REPLACE otr WHERE otr.LPU_CODE = t.REF_ID_HOS) SMP_OID
+       (SELECT OID FROM SMP_OIDS_TO_REPLACE otr WHERE otr.LPU_CODE = t.REF_ID_HOS) SMP_OID,
+        CASE WHEN RESIDENTIAL_ADDR IS NOT NULL AND RESIDENTIAL_ADDR_CITY IS NOT NULL
+              THEN (SELECT DEPART_OID
+                      FROM FAP f
+                     WHERE f.GEO_ID = RESIDENTIAL_ADDR_CITY
+                           AND f.LPU_CODE = REF_ID_HOS
+                           AND ROWNUM<=1
+                   )
+            WHEN RESIDENTIAL_ADDR IS NULL AND REGISTRATION_ADDR IS NOT NULL AND REGISTRATION_ADDR_CITY IS NOT NULL
+              THEN (SELECT DEPART_OID
+                      FROM FAP f
+                     WHERE f.GEO_ID = REGISTRATION_ADDR_CITY
+                           AND f.LPU_CODE = REF_ID_HOS
+                           AND ROWNUM<=1
+                   )
+            ELSE NULL
+        END FAP_OID
   FROM (SELECT a.ID REF_ID_PER,
                a.SURNAME SNAME,
                a.FIRSTNAME NAME,
@@ -7,8 +23,10 @@ SELECT t.*,
                to_char(a.BIRTHDATE,'dd.mm.yyyy') DATE_BIRTH,
                a.ENP,
                a.CONTACTS,
-               a.REGISTRATION_ADDR,
-               a.RESIDENTIAL_ADDR,
+               a.REGISTRATION_ADDR_TEXT REGISTRATION_ADDR,
+               a.REGISTRATION_ADDR_CITY,
+               a.RESIDENTIAL_ADDR_TEXT RESIDENTIAL_ADDR,
+               A.RESIDENTIAL_ADDR_CITY,
                to_char(add_months(trunc (SYSDATE, 'MM'),1),'dd.mm.yyyy') DATA_REEST,
                CASE WHEN ar_hos.REF_ID_HOS IS NULL
                       THEN CASE WHEN ar_gin.IS_AMB = 1
